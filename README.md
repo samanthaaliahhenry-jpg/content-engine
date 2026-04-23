@@ -1,5 +1,6 @@
 # Sam Henry · Content Engine
 
+
 Your personal content extraction tool. Paste an essay, get LinkedIn posts, Substack Notes, carousel copy, and short posts — all in your voice.
 
 ---
