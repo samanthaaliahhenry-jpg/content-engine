@@ -63,7 +63,7 @@ module.exports = async function handler(req, res) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: 1000,
         system: VOICE_SYSTEM_PROMPT,
         messages: [
@@ -89,3 +89,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Something went wrong. Try again.' });
   }
 };
+
+
