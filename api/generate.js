@@ -54,12 +54,19 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Missing essay or platform' });
   }
 
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    console.error('ANTHROPIC_API_KEY is not set');
+    return res.status(500).json({ error: 'API key not configured' });
+  }
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
@@ -69,7 +76,7 @@ module.exports = async function handler(req, res) {
         messages: [
           {
             role: 'user',
-            content: `ESSAY:\n\n${essay}\n\n---\n\nTASK: ${PLATFORM_PROMPTS[platform]}`,
+            content: 'ESSAY:\n\n' + essay + '\n\n---\n\nTASK: ' + PLATFORM_PROMPTS[platform],
           },
         ],
       }),
@@ -77,17 +84,20 @@ module.exports = async function handler(req, res) {
 
     const data = await response.json();
 
-    if (data.error) {
-      return res.status(500).json({ error: data.error.message });
+    console.log('Anthropic status:', response.status);
+    console.log('Anthropic response:', JSON.stringify(data));
+
+    if (!response.ok || data.error) {
+      const errMsg = data.error ? data.error.message : 'Unknown error';
+      console.error('Anthropic error:', errMsg);
+      return res.status(500).json({ error: errMsg });
     }
 
-    const text = data.content && data.content.find(function(b) { return b.type === 'text'; });
-    return res.status(200).json({ result: text ? text.text : '' });
+    const textBlock = data.content && data.content.find(function(b) { return b.type === 'text'; });
+    return res.status(200).json({ result: textBlock ? textBlock.text : '' });
 
   } catch (err) {
-    console.error('API error:', err);
-    return res.status(500).json({ error: 'Something went wrong. Try again.' });
+    console.error('Fetch error:', err.message);
+    return res.status(500).json({ error: err.message });
   }
 };
-
-
