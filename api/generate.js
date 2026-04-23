@@ -1,16 +1,4 @@
-export default async function handler(req, res) {
-  // Only allow POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { essay, platform } = req.body;
-
-  if (!essay || !platform) {
-    return res.status(400).json({ error: 'Missing essay or platform' });
-  }
-
-  const VOICE_SYSTEM_PROMPT = `You are a content strategist who writes in the exact voice of Samantha Henry: a London-based Cultural and Brand Strategist. Your job is to extract social content from her essays.
+const VOICE_SYSTEM_PROMPT = `You are a content strategist who writes in the exact voice of Samantha Henry: a London-based Cultural and Brand Strategist. Your job is to extract social content from her essays.
 
 VOICE RULES (non-negotiable):
 - Short sentences that land. Semi-colons used with confidence.
@@ -42,18 +30,29 @@ BRAND: Cultural and Brand Strategist. Positioning: "People-led. Culturally sharp
 
 Generate content that sounds like HER — specific, confident, warm but not soft, intellectually alive.`;
 
-  const PLATFORM_PROMPTS = {
-    linkedin: `Write a LinkedIn post from this essay. Follow the LinkedIn template exactly. Max 250 words. Warm, direct, no corporate speak. End with: "Full essay in the comments 🧡" and 3 relevant hashtags.`,
-    substack_note: `Write a Substack Note teasing this essay. 80-100 words max. Casual, first-person, reads like a thought shared between friends. No hashtags. End with a gentle pull to read.`,
-    carousel: `Write copy for a 5-slide Instagram/LinkedIn carousel based on this essay. Format:
+const PLATFORM_PROMPTS = {
+  linkedin: `Write a LinkedIn post from this essay. Follow the LinkedIn template exactly. Max 250 words. Warm, direct, no corporate speak. End with: "Full essay in the comments 🧡" and 3 relevant hashtags.`,
+  substack_note: `Write a Substack Note teasing this essay. 80-100 words max. Casual, first-person, reads like a thought shared between friends. No hashtags. End with a gentle pull to read.`,
+  carousel: `Write copy for a 5-slide Instagram/LinkedIn carousel based on this essay. Format:
 SLIDE 1 (Hook headline — 6 words max)
 SLIDE 2 (The setup — 2 short sentences)
 SLIDE 3 (Pull quote from essay — under 12 words, use quotation marks)
 SLIDE 4 (The argument — 2-3 sentences)
 SLIDE 5 (CTA — warm, 1-2 lines)
 Palette note: terracotta background, cream text, gold accents.`,
-    twitter: `Write a punchy post (under 200 chars) for X/Threads that sparks curiosity about this essay. Sharp. No emojis unless essential. No hashtags.`,
-  };
+  twitter: `Write a punchy post (under 200 chars) for X/Threads that sparks curiosity about this essay. Sharp. No emojis unless essential. No hashtags.`,
+};
+
+module.exports = async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const { essay, platform } = req.body;
+
+  if (!essay || !platform) {
+    return res.status(400).json({ error: 'Missing essay or platform' });
+  }
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -82,11 +81,11 @@ Palette note: terracotta background, cream text, gold accents.`,
       return res.status(500).json({ error: data.error.message });
     }
 
-    const text = data.content?.find((b) => b.type === 'text')?.text || '';
-    return res.status(200).json({ result: text });
+    const text = data.content && data.content.find(function(b) { return b.type === 'text'; });
+    return res.status(200).json({ result: text ? text.text : '' });
 
   } catch (err) {
     console.error('API error:', err);
     return res.status(500).json({ error: 'Something went wrong. Try again.' });
   }
-}
+};
